@@ -1,0 +1,176 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/hermes/schemas/handoff.schema.json",
+  "title": "Hermes V0 inter-role handoff",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "project_id",
+    "run_id",
+    "task_id",
+    "iteration",
+    "role_from",
+    "role_to",
+    "routing",
+    "goal",
+    "non_goals",
+    "constraints",
+    "allowed_paths",
+    "tasks",
+    "acceptance_criteria",
+    "git",
+    "commands",
+    "test_summary",
+    "artifacts",
+    "status",
+    "errors",
+    "context"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "project_id": { "$ref": "#/$defs/id" },
+    "run_id": { "$ref": "#/$defs/id" },
+    "task_id": { "$ref": "#/$defs/id" },
+    "iteration": { "type": "integer", "minimum": 0 },
+    "role_from": { "$ref": "#/$defs/role" },
+    "role_to": { "$ref": "#/$defs/role" },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effective_model", "effective_provider", "actual_route", "attempt"],
+      "properties": {
+        "effective_model": { "type": "string", "minLength": 1 },
+        "effective_provider": { "type": "string", "minLength": 1 },
+        "actual_route": { "type": "string", "minLength": 1 },
+        "account_ref": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "attempt": { "type": "integer", "minimum": 1 },
+        "latency_ms": { "type": "integer", "minimum": 0 },
+        "fallback_reason": { "type": ["string", "null"] }
+      }
+    },
+    "goal": { "type": "string", "minLength": 1 },
+    "non_goals": { "$ref": "#/$defs/string_list" },
+    "constraints": { "$ref": "#/$defs/string_list" },
+    "allowed_paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "dependencies"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string", "minLength": 1 },
+          "dependencies": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } }
+        }
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "evidence_refs"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "description": { "type": "string", "minLength": 1 },
+          "evidence_refs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha", "diff_summary", "changed_files"],
+      "properties": {
+        "sha": { "$ref": "#/$defs/sha1" },
+        "diff_summary": { "type": "string" },
+        "changed_files": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "command", "exit_code", "duration_ms"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "command": { "type": "string", "minLength": 1 },
+          "exit_code": { "type": "integer" },
+          "duration_ms": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "test_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "failed", "skipped"],
+      "properties": {
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "sha256"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed", "pending", "blocked"],
+      "properties": {
+        "completed": { "$ref": "#/$defs/string_list" },
+        "pending": { "$ref": "#/$defs/string_list" },
+        "blocked": { "$ref": "#/$defs/string_list" }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "description": "Append-only error history.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "code", "message"],
+        "properties": {
+          "sequence": { "type": "integer", "minimum": 1 },
+          "code": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["digest", "min_context_ok"],
+      "properties": {
+        "digest": { "$ref": "#/$defs/sha256" },
+        "min_context_ok": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$" },
+    "role": { "enum": ["orchestrator", "builder-architect", "builder-coder", "builder-reviewer"] },
+    "sha1": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "string_list": { "type": "array", "items": { "type": "string" } }
+  }
+}
